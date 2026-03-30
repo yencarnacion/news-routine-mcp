@@ -1,0 +1,3 @@
+for this project use your expert knowledge of mcp servers, golang, web dev.
+
+convert https://github.com/yencarnacion/news-routine into an mcp server in golang. in the process update the grok code to the latest documentation given that what is there i think is deprecated and possibly no longer working.  make it so i can run it fro the command line (line the repo news-routine).  have it default to to port 9081 configurable in a yaml.  have it use api keys like news-routine from and .env file. for grok default to model 4.2 with search/news/x access.  for the tradethenews tab have it default to openai 5.4 model.  write any important assumptions that you make in markdown in assumptions.md.  write a README.md explaining how to use from claude cowork.

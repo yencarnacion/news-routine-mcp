@@ -1,0 +1,41 @@
+server:
+  host: 127.0.0.1
+  port: 9081
+  path: /mcp
+
+providers:
+  openai:
+    model: gpt-5.4
+    reasoning_effort: minimal
+    timeout_seconds: 120
+
+  grok:
+    model: grok-4.20-reasoning
+    timeout_seconds: 120
+    use_web_search: true
+    use_x_search: true
+    allowed_domains: []
+    excluded_domains: []
+    allowed_x_handles: []
+    excluded_x_handles: []
+    from_date: ""
+    to_date: ""
+
+  perplexity:
+    model: sonar-pro
+    search_mode: sec
+    timeout_seconds: 120
+
+  marketaux:
+    timeout_seconds: 20
+    premarket_countries: us
+    premarket_min_doc_count: 8
+    premarket_limit: 100
+    sector_industries:
+      - Technology
+      - Semiconductors
+      - Biotechnology
+      - Energy
+      - Financial Services
+    sector_interval: hour
+    watchlist_interval: minute

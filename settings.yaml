@@ -1,0 +1,152 @@
+news_prompt: |-
+  There are a number of news sources listed below (like the Financial Times, INVESTORS BUSINESS DAILY, USA Today, etc.).
+  Underneath each source are summarized news headlines that start with a dash ("-").
+
+  For each news headline starting with a dash ("-"), summarize it as a single sentence, capturing the essence of what was said.
+  Maintain the news section headings as shown in the provided format.
+  Ensure the final output follows this structure, where the beginning of each news summary has a couple of words in bold, serving as a mini title:
+
+  **NEWS SOURCE NAME**
+  - **Mini Title:** Headline summary 1
+  - **Mini Title:** Headline summary 2
+  - **Mini Title:** Headline summary 3
+grok_prompts:
+  - Provide me a digest of world news in the last 24 hours.
+  - what are the key stories and trends from recent sources
+  - what are todays headlines
+  - what are todays business, stock market, and wall street key stories and trends from recent sources
+  - what are todays business, stock market, and wall street headlines
+  - what numbers or economic data or announcements for today are of importance to the us stock market and I should be aware of
+  - what are todays tech and ai and openai key stories and trends from recent sources
+  - what are todays tech and ai and openai headlines
+  - what are todays bitcoin and crypto key stories and trends from recent sources
+  - what are todays bitcoin and crypto headlines
+  - what are the key stories and trends from recent sources from today right now
+  - what are the trending headlines right now
+  - what are todays key stories and trends from recent sources related to puerto rico
+  - what are todays headlines related to puerto rico
+  - create a end-of-the-day summary for the most recent day the market was open based on major financial news, key market movements, and economic indicators
+  - create a end-of-the-week summary for the most recent week the market was open based on major financial news, key market movements, and economic indicators
+  - what numbers or economic data or announcements for next week are of importance to the us stock market and I should be aware of
+  - track the performance of Apple, Tesla, Microsoft, and Nvidia during the most recent trading session, including price change, volume, and key metrics. Also compare the performance of these stocks to the general performance of their respective sectors
+  - |-
+    Analyze the latest news headlines and social media mentions of Tesla and summarize the public sentiment as positive, negative, or neutral. Provide the most relevant links
+    **Extensions:**
+    - Break down sentiment classification by media source
+    - Identify sentiment of the latest product launches, feature updates, and earnings report, if applicable
+  - |-
+    what companies have announced earnings since the most recent us markets close. Any surprises. Analyze the latest news headlines and social media mentions of these companies and summarize the public sentiment as positive, negative, or neutral. Provide the most relevant links **Extensions:** - Break down sentiment classification by media source - Identify sentiment of the latest product launches, feature updates, and earnings report, if applicable
+
+    For your answer include a section titled Earnings Details and Surprises
+
+    include
+    **name of company ($TICKER):**
+    Earnings: Estimated Earnings of $dollar-amount vs actual earnings of $dollar-amount (difference between EPS and Actual)
+    Revenue: Actual Revenue vs Estimated (indicate if beat or missed and by how much)
+    Surprise: if any
+    Stock Movement: Up/Down % and your best guess as to why up/down
+
+    Also have a section titled Analysis of News Headlines and Social Media Mentions
+
+    include
+    **name of company ($TICKER):**
+    **News Headlines:**
+    **Social Media Mentions:**
+    **Public Sentiment:**
+    **Sentiment by Media Source:**
+    **Web News:**
+    **Product Launches/Feature Updates:**
+    **Earnings Report Sentiment:**
+pplx_queries:
+  - type: fixed
+    prompt: Prepare me for when markets open today?
+    placeholder: ""
+    label: Prepare me for when markets open today?
+  - type: template
+    prompt: |-
+      Give the main takeaways in markdown about the following: {{context}}. Give your best guess of how the stock will react to this filing from the perspective of a day trader. include the intrument ticker if there is one and you know it.
+    placeholder: context
+    label: Filing Takeaways
+  - type: template
+    prompt: |-
+      You are an equity news summarizer for short-term traders.
+      INPUT: {{page}} (This may include site chrome, menus, and other noise.)
+      DATE CONTEXT: Assume "the open" means the next regular U.S. market session after the events in the article.
+      TASKS
+      1) Parse the article content only (ignore headers, footers, menus, ads). Identify each company mentioned with a clear, company-specific catalyst (earnings, guidance, M&A, regulation, analyst action, operational update, etc.).
+      2) For each company, extract:
+         - Company name and instrument ticker (if present or inferable from the text).
+         - The single most important takeaway in 1-2 sentences with key numbers (beats/misses, guidance, deal value, % moves, etc.).
+      3) For each company, add a ONE-PARAGRAPH OR SHORTER "Day-Trader Open Read":
+         - Give your best guess of how the stock will behave at the next open in trader terms (e.g., "gap up + possible continuation," "gap up then fade," "gap down continuation," "flat/indecisive").
+         - Include a one-sentence rationale tied to the catalyst (surprise vs. expectations, quality of guidance, deal math, supply/demand cues).
+         - Keep it concise (<=1-2 sentences). Do NOT give advice or a trade plan; just the likely directional behavior and brief reason.
+         - If the ticker is not in the article and cannot be confidently inferred, write "Ticker: n/a".
+      OUTPUT FORMAT (Markdown)
+      - Start with: `### Main Takeaways`
+      - Then, for each company, use exactly this structure:
+      - **<Company Name> (<TICKER or n/a>)**: <1-2 sentence key takeaway with numbers>.
+        _Open read:_ <<=1-2 sentence directional guess at the next open (gap/continuation/fade/flat) + rationale>.
+      RULES & STYLE
+      - Be definitive but realistic; avoid hedging like "might/maybe" unless uncertainty is material.
+      - Prefer the primary U.S.-listed common ticker when multiple classes exist.
+      - If an article shows intraday % moves, you may use them as context but still frame the prediction for the next open.
+      - Keep each "Open read" to one short paragraph or less.
+      - Maximum 100 companies. Skip purely macro notes that don't attach to a specific ticker.
+    placeholder: page
+    label: in play stocks
+  - type: custom
+    prompt: ""
+    placeholder: ""
+    label: Custom query
+  - type: template
+    prompt: |-
+      for this conversation i want you to use your expert daytrading, investing and wall street knowledge.
+      apply the appropriate prompt to the press release below:
+      ---
+      **Prompt:**
+      Analyze the following press release(s) about private placements. Your task is to:
+      1. Deal Structure
+         * Summarize the financial terms (amount raised, securities offered, pricing, conversion terms, discounts, warrants, in-kind contributions, etc.).
+         * Note any unusual or complex features (crypto components, reverse splits, excessive dilution, etc.).
+      2. Shareholder Impact
+         * Assess the potential dilution impact.
+         * Evaluate whether the capital raised strengthens or weakens the company's balance sheet.
+         * Consider strategic alignment (does this support the core business, or is it a distraction?).
+         * Identify risks (regulatory, execution, speculative assets, etc.).
+      3. Comparative Analysis
+         * Benchmark against typical private placement terms in the public markets.
+         * Highlight whether insiders, strategic partners, or credible institutions are involved.
+      4. Final Evaluation
+         * Provide a clear judgment: is this private placement good, neutral, or bad for existing shareholders?
+         * Assign a score from -10 to 10, where -10 is the worst possible deal, 0 is neutral, and 10 is the best possible deal.
+      Then, provide the final answer twice (once for shareholders and another for stock reaction) in this format:
+      **Verdict:** [Good / Neutral / Bad]
+      **Score:** [X out of -10 to 10]
+      **Reasoning:** [Short, clear justification in plain English]
+      ---
+      **Prompt:**
+      Analyze the following press release about an offering of common stock. Your task is to:
+      1. Deal Structure
+         * Summarize the offering size, price per share, number of shares, and gross proceeds.
+         * Note whether the company or selling shareholders are offering the shares.
+         * Identify the underwriters and any over-allotment/greenshoe options.
+      2. Shareholder Impact
+         * Assess dilution to existing shareholders (compare offering size to current float/market cap if provided).
+         * Evaluate whether the offering strengthens the balance sheet (cash runway, debt repayment, R&D funding, etc.).
+         * Consider whether the use of proceeds is clear and aligned with the company's core business strategy.
+         * Identify risks: offering price discount, pressure on share price, or repeated capital raises.
+      3. Comparative Analysis
+         * Benchmark terms vs. typical underwritten offerings (discount size, underwriter quality, deal size relative to market cap).
+         * Consider whether the offering was done opportunistically (high valuation window) or out of necessity (cash crunch).
+      4. Final Evaluation
+         * Provide a clear judgment: good, neutral, or bad for shareholders.
+         * Assign a score from -10 to 10, where -10 is extremely harmful, 0 is neutral, and 10 is extremely beneficial.
+      Then, provide the final answer twice (once for shareholders and another for stock reaction) in this format:
+      **Verdict:** [Good / Neutral / Bad]
+      **Score:** [X out of -10 to 10]
+      **Reasoning:** [Short, plain-English justification]
+      ---
+      INPUT: {{page}} (This may include site chrome, menus, and other noise.)
+    placeholder: page
+    label: offering or private placement
