@@ -151,7 +151,7 @@ func loadConfig(path string) (AppConfig, error) {
 	cfg.Server.Path = normalizePath(cfg.Server.Path)
 
 	cfg.Providers.OpenAI.Model = fallbackString(cfg.Providers.OpenAI.Model, "gpt-5.4")
-	cfg.Providers.OpenAI.ReasoningEffort = fallbackString(cfg.Providers.OpenAI.ReasoningEffort, "minimal")
+	cfg.Providers.OpenAI.ReasoningEffort = fallbackString(cfg.Providers.OpenAI.ReasoningEffort, "medium")
 	cfg.Providers.OpenAI.TimeoutSeconds = fallbackInt(cfg.Providers.OpenAI.TimeoutSeconds, 120)
 
 	cfg.Providers.Grok.Model = fallbackString(cfg.Providers.Grok.Model, "grok-4.20-reasoning")
@@ -190,7 +190,7 @@ func defaultConfig() AppConfig {
 		Providers: ProvidersConfig{
 			OpenAI: OpenAIConfig{
 				Model:           "gpt-5.4",
-				ReasoningEffort: "minimal",
+				ReasoningEffort: "medium",
 				TimeoutSeconds:  120,
 			},
 			Grok: GrokConfig{

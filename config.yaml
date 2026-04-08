@@ -1,12 +1,12 @@
 server:
-  host: 127.0.0.1
+  host: 0.0.0.0
   port: 9081
   path: /mcp
 
 providers:
   openai:
     model: gpt-5.4
-    reasoning_effort: minimal
+    reasoning_effort: medium
     timeout_seconds: 120
 
   grok:
