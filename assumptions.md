@@ -7,5 +7,5 @@
 - I interpreted "Grok default to model 4.2" as the current xAI 4.20 family documented on March 30, 2026. The implementation defaults to `grok-4.20-reasoning` because current xAI tool-use examples use that model name rather than a literal `grok-4.2`.
 - I interpreted "search/news/x access" for Grok as enabling xAI Responses API tool use with both `web_search` and `x_search` by default. The current xAI docs expose those tool types instead of a separate `news_search` tool.
 - I treated "update the grok code to the latest documentation" as migrating away from the legacy Chat Completions plus `search_parameters` approach in the upstream project to the current xAI Responses API tool model.
-- I treated "tradethenews tab" as the upstream "generate summaries from pasted newsletter text" workflow and switched that path to OpenAI Responses API with `gpt-5.4` as the default model.
+- I treated "tradethenews tab" as the upstream "generate summaries from pasted newsletter text" workflow and switched that path to OpenAI Responses API with `gpt-5.6-terra` and `high` reasoning effort as the defaults.
 - I interpreted "README explaining how to use from claude cowork" as "Claude-family MCP client usage." The README includes both Streamable HTTP and stdio configuration examples and calls out this interpretation explicitly.
