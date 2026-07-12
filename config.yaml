@@ -7,7 +7,7 @@ providers:
   openai:
     model: gpt-5.6-terra
     reasoning_effort: high
-    timeout_seconds: 120
+    timeout_seconds: 300
 
   grok:
     model: grok-4.5
@@ -24,10 +24,10 @@ providers:
   perplexity:
     model: sonar-pro
     search_mode: sec
-    timeout_seconds: 120
+    timeout_seconds: 300
 
   marketaux:
-    timeout_seconds: 20
+    timeout_seconds: 300
     premarket_countries: us
     premarket_min_doc_count: 8
     premarket_limit: 100

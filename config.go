@@ -152,16 +152,16 @@ func loadConfig(path string) (AppConfig, error) {
 
 	cfg.Providers.OpenAI.Model = fallbackString(cfg.Providers.OpenAI.Model, "gpt-5.6-terra")
 	cfg.Providers.OpenAI.ReasoningEffort = fallbackString(cfg.Providers.OpenAI.ReasoningEffort, "high")
-	cfg.Providers.OpenAI.TimeoutSeconds = fallbackInt(cfg.Providers.OpenAI.TimeoutSeconds, 120)
+	cfg.Providers.OpenAI.TimeoutSeconds = fallbackInt(cfg.Providers.OpenAI.TimeoutSeconds, 300)
 
 	cfg.Providers.Grok.Model = fallbackString(cfg.Providers.Grok.Model, "grok-4.5")
 	cfg.Providers.Grok.TimeoutSeconds = fallbackInt(cfg.Providers.Grok.TimeoutSeconds, 300)
 
 	cfg.Providers.Perplexity.Model = fallbackString(cfg.Providers.Perplexity.Model, "sonar-pro")
 	cfg.Providers.Perplexity.SearchMode = fallbackString(cfg.Providers.Perplexity.SearchMode, "sec")
-	cfg.Providers.Perplexity.TimeoutSeconds = fallbackInt(cfg.Providers.Perplexity.TimeoutSeconds, 120)
+	cfg.Providers.Perplexity.TimeoutSeconds = fallbackInt(cfg.Providers.Perplexity.TimeoutSeconds, 300)
 
-	cfg.Providers.Marketaux.TimeoutSeconds = fallbackInt(cfg.Providers.Marketaux.TimeoutSeconds, 20)
+	cfg.Providers.Marketaux.TimeoutSeconds = fallbackInt(cfg.Providers.Marketaux.TimeoutSeconds, 300)
 	cfg.Providers.Marketaux.PremarketCountries = fallbackString(cfg.Providers.Marketaux.PremarketCountries, "us")
 	cfg.Providers.Marketaux.PremarketMinDoc = fallbackInt(cfg.Providers.Marketaux.PremarketMinDoc, 8)
 	cfg.Providers.Marketaux.PremarketLimit = fallbackInt(cfg.Providers.Marketaux.PremarketLimit, 100)
@@ -191,7 +191,7 @@ func defaultConfig() AppConfig {
 			OpenAI: OpenAIConfig{
 				Model:           "gpt-5.6-terra",
 				ReasoningEffort: "high",
-				TimeoutSeconds:  120,
+				TimeoutSeconds:  300,
 			},
 			Grok: GrokConfig{
 				Model:          "grok-4.5",
@@ -202,10 +202,10 @@ func defaultConfig() AppConfig {
 			Perplexity: PerplexityConfig{
 				Model:          "sonar-pro",
 				SearchMode:     "sec",
-				TimeoutSeconds: 120,
+				TimeoutSeconds: 300,
 			},
 			Marketaux: MarketauxConfig{
-				TimeoutSeconds:     20,
+				TimeoutSeconds:     300,
 				PremarketCountries: "us",
 				PremarketMinDoc:    8,
 				PremarketLimit:     100,
