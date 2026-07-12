@@ -119,7 +119,7 @@ If your Claude client prefers launching a local command over stdio, use:
 ## Notes on Provider Defaults
 
 - OpenAI defaults to `gpt-5.6-terra` with `high` reasoning effort.
-- Grok defaults to `grok-4.20-reasoning`, which is the current documented 4.20 family tool-use model as of March 30, 2026.
+- Grok defaults to `grok-4.5` with a five-minute timeout. It uses xAI's Responses API with web and X search enabled.
 - Perplexity defaults to `sonar-pro`.
 - The Marketaux tools preserve the upstream-style defaults for premarket, watchlist, and sector scans.
 

@@ -154,8 +154,8 @@ func loadConfig(path string) (AppConfig, error) {
 	cfg.Providers.OpenAI.ReasoningEffort = fallbackString(cfg.Providers.OpenAI.ReasoningEffort, "high")
 	cfg.Providers.OpenAI.TimeoutSeconds = fallbackInt(cfg.Providers.OpenAI.TimeoutSeconds, 120)
 
-	cfg.Providers.Grok.Model = fallbackString(cfg.Providers.Grok.Model, "grok-4.20-reasoning")
-	cfg.Providers.Grok.TimeoutSeconds = fallbackInt(cfg.Providers.Grok.TimeoutSeconds, 120)
+	cfg.Providers.Grok.Model = fallbackString(cfg.Providers.Grok.Model, "grok-4.5")
+	cfg.Providers.Grok.TimeoutSeconds = fallbackInt(cfg.Providers.Grok.TimeoutSeconds, 300)
 
 	cfg.Providers.Perplexity.Model = fallbackString(cfg.Providers.Perplexity.Model, "sonar-pro")
 	cfg.Providers.Perplexity.SearchMode = fallbackString(cfg.Providers.Perplexity.SearchMode, "sec")
@@ -194,8 +194,8 @@ func defaultConfig() AppConfig {
 				TimeoutSeconds:  120,
 			},
 			Grok: GrokConfig{
-				Model:          "grok-4.20-reasoning",
-				TimeoutSeconds: 120,
+				Model:          "grok-4.5",
+				TimeoutSeconds: 300,
 				UseWebSearch:   true,
 				UseXSearch:     true,
 			},

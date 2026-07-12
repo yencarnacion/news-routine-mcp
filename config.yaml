@@ -10,8 +10,8 @@ providers:
     timeout_seconds: 120
 
   grok:
-    model: grok-4.20-reasoning
-    timeout_seconds: 120
+    model: grok-4.5
+    timeout_seconds: 300
     use_web_search: true
     use_x_search: true
     allowed_domains: []
