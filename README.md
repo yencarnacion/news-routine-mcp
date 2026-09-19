@@ -119,7 +119,7 @@ If your Claude client prefers launching a local command over stdio, use:
 ## Notes on Provider Defaults
 
 - OpenAI defaults to `gpt-5.6-terra` with `high` reasoning effort.
-- Grok defaults to `grok-4.5` with a five-minute timeout. It uses xAI's Responses API with web and X search enabled.
+- Grok defaults to `grok-4.6` with a five-minute timeout. It uses xAI's Responses API with web and X search enabled.
 - Perplexity defaults to `sonar-pro`.
 - The Marketaux tools preserve the upstream-style defaults for premarket, watchlist, and sector scans.
 
@@ -138,10 +138,32 @@ Grok current-events query:
 ```json
 {
   "prompt": "What are today's most important U.S. market-moving stories?",
+  "reasoning_effort": "medium",
+  "prompt_cache_key": "morning-news",
   "use_web_search": true,
   "use_x_search": true
 }
 ```
+
+Grok settings in `config.yaml`:
+
+```yaml
+providers:
+  grok:
+    model: grok-4.6
+    reasoning_effort: high
+    prompt_cache_key: news-routine-mcp
+```
+
+`reasoning_effort` accepts `low`, `medium`, `high`, or `xhigh`. Omitted or blank effort uses the configured default; invalid values are rejected before an API request. Lower effort is useful for quick scans; `xhigh` can take longer and consume more reasoning tokens. The existing five-minute timeout still applies.
+
+`prompt_cache_key` is a stable routing hint for related requests. The default is `news-routine-mcp`; use a separate key per workflow or conversation when appropriate. Omitting the tool argument inherits the YAML value. An explicit empty string (in YAML or a tool call) omits the routing hint; it does not disable automatic provider caching. A key does not preserve conversation history or reuse an old answer.
+
+The server keeps its fixed system instructions before the variable user prompt. Put reusable background first and changing questions last in your prompts to preserve matching prefixes. Cache hits are not guaranteed, especially for short prompts or requests far apart.
+
+Grok results include `usage` in structured output and a token usage footer in text, when xAI supplies usage. It reports input, cached input, output, reasoning, and total tokens. Cached tokens are part of input tokens, and reasoning tokens are part of output tokens; do not add them again. Missing usage is omitted, not reported as a cache miss. Token counts let you measure cache reuse; they are not a dollar-cost estimate.
+
+References: [reasoning](https://docs.x.ai/developers/model-capabilities/text/reasoning), [cache routing](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits), [usage accounting](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/usage-and-pricing).
 
 Perplexity filing query:
 

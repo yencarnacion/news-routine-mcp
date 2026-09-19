@@ -13,10 +13,24 @@ import (
 )
 
 type AIResult struct {
+	Usage     *AIUsage `json:"usage,omitempty"`
 	Provider  string   `json:"provider"`
 	Model     string   `json:"model"`
 	Text      string   `json:"text"`
 	Citations []string `json:"citations,omitempty"`
+}
+
+// AIUsage preserves the Responses API token accounting, including cache hits.
+type AIUsage struct {
+	InputTokens        int `json:"input_tokens"`
+	OutputTokens       int `json:"output_tokens"`
+	TotalTokens        int `json:"total_tokens"`
+	InputTokensDetails struct {
+		CachedTokens int `json:"cached_tokens"`
+	} `json:"input_tokens_details"`
+	OutputTokensDetails struct {
+		ReasoningTokens int `json:"reasoning_tokens"`
+	} `json:"output_tokens_details"`
 }
 
 type MarketauxResult struct {
@@ -61,6 +75,8 @@ func (a *App) callOpenAIResponse(ctx context.Context, model, reasoningEffort, pr
 }
 
 type xAIRequest struct {
+	ReasoningEffort  string
+	PromptCacheKey   string
 	Prompt           string
 	Model            string
 	UseWebSearch     bool
@@ -74,6 +90,10 @@ type xAIRequest struct {
 }
 
 func (a *App) callXAIResponse(ctx context.Context, req xAIRequest) (AIResult, error) {
+	req.ReasoningEffort = fallbackString(req.ReasoningEffort, "high")
+	if err := validateGrokReasoningEffort(req.ReasoningEffort); err != nil {
+		return AIResult{}, err
+	}
 	apiKey := strings.TrimSpace(os.Getenv("GROK_API_KEY"))
 	if apiKey == "" {
 		return AIResult{}, fmt.Errorf("GROK_API_KEY not set")
@@ -96,6 +116,10 @@ func (a *App) callXAIResponse(ctx context.Context, req xAIRequest) (AIResult, er
 		},
 	}
 
+	payload["reasoning"] = map[string]any{"effort": req.ReasoningEffort}
+	if key := strings.TrimSpace(req.PromptCacheKey); key != "" {
+		payload["prompt_cache_key"] = key
+	}
 	tools := buildXAITools(req)
 	if len(tools) > 0 {
 		payload["tools"] = tools
@@ -113,6 +137,7 @@ func (a *App) callXAIResponse(ctx context.Context, req xAIRequest) (AIResult, er
 
 	return AIResult{
 		Provider:  "xai",
+		Usage:     extractAIUsage(body),
 		Model:     req.Model,
 		Text:      text,
 		Citations: extractCitations(body),
@@ -397,4 +422,14 @@ func firstString(values ...any) string {
 		}
 	}
 	return ""
+}
+
+func extractAIUsage(body []byte) *AIUsage {
+	var envelope struct {
+		Usage *AIUsage `json:"usage"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return nil
+	}
+	return envelope.Usage
 }

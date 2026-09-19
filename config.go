@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -47,6 +48,8 @@ type OpenAIConfig struct {
 }
 
 type GrokConfig struct {
+	ReasoningEffort  string   `yaml:"reasoning_effort"`
+	PromptCacheKey   string   `yaml:"prompt_cache_key"`
 	Model            string   `yaml:"model"`
 	TimeoutSeconds   int      `yaml:"timeout_seconds"`
 	UseWebSearch     bool     `yaml:"use_web_search"`
@@ -154,7 +157,12 @@ func loadConfig(path string) (AppConfig, error) {
 	cfg.Providers.OpenAI.ReasoningEffort = fallbackString(cfg.Providers.OpenAI.ReasoningEffort, "high")
 	cfg.Providers.OpenAI.TimeoutSeconds = fallbackInt(cfg.Providers.OpenAI.TimeoutSeconds, 300)
 
-	cfg.Providers.Grok.Model = fallbackString(cfg.Providers.Grok.Model, "grok-4.5")
+	cfg.Providers.Grok.Model = fallbackString(cfg.Providers.Grok.Model, "grok-4.6")
+	cfg.Providers.Grok.ReasoningEffort = fallbackString(cfg.Providers.Grok.ReasoningEffort, "high")
+	if err := validateGrokReasoningEffort(cfg.Providers.Grok.ReasoningEffort); err != nil {
+		return AppConfig{}, err
+	}
+	cfg.Providers.Grok.PromptCacheKey = strings.TrimSpace(cfg.Providers.Grok.PromptCacheKey)
 	cfg.Providers.Grok.TimeoutSeconds = fallbackInt(cfg.Providers.Grok.TimeoutSeconds, 300)
 
 	cfg.Providers.Perplexity.Model = fallbackString(cfg.Providers.Perplexity.Model, "sonar-pro")
@@ -194,10 +202,12 @@ func defaultConfig() AppConfig {
 				TimeoutSeconds:  300,
 			},
 			Grok: GrokConfig{
-				Model:          "grok-4.5",
-				TimeoutSeconds: 300,
-				UseWebSearch:   true,
-				UseXSearch:     true,
+				ReasoningEffort: "high",
+				PromptCacheKey:  "news-routine-mcp",
+				Model:           "grok-4.6",
+				TimeoutSeconds:  300,
+				UseWebSearch:    true,
+				UseXSearch:      true,
 			},
 			Perplexity: PerplexityConfig{
 				Model:          "sonar-pro",
@@ -252,4 +262,13 @@ func (c PerplexityConfig) Timeout() time.Duration {
 
 func (c MarketauxConfig) Timeout() time.Duration {
 	return time.Duration(c.TimeoutSeconds) * time.Second
+}
+
+func validateGrokReasoningEffort(effort string) error {
+	switch effort {
+	case "low", "medium", "high", "xhigh":
+		return nil
+	default:
+		return fmt.Errorf("grok reasoning_effort must be low, medium, high, or xhigh; got %q", effort)
+	}
 }

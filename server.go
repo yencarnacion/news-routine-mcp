@@ -39,6 +39,8 @@ type SummarizeTradeTheNewsInput struct {
 }
 
 type GrokPromptInput struct {
+	ReasoningEffort  string   `json:"reasoning_effort,omitempty" jsonschema:"Optional reasoning effort: low, medium, high, or xhigh. Defaults to configured effort (high)."`
+	PromptCacheKey   *string  `json:"prompt_cache_key,omitempty" jsonschema:"Optional stable cache routing key for related requests. Omit to use config; empty string omits the key. Does not store answers or conversation history."`
 	Prompt           string   `json:"prompt" jsonschema:"Prompt to send to Grok."`
 	Model            string   `json:"model,omitempty" jsonschema:"Optional Grok model override."`
 	UseWebSearch     *bool    `json:"use_web_search,omitempty" jsonschema:"Enable xAI web_search."`
@@ -178,7 +180,13 @@ func (a *App) handleRunGrokPrompt(ctx context.Context, _ *mcp.CallToolRequest, i
 		return nil, AIResult{}, fmt.Errorf("prompt is required")
 	}
 
+	cacheKey := a.Config.Providers.Grok.PromptCacheKey
+	if in.PromptCacheKey != nil {
+		cacheKey = strings.TrimSpace(*in.PromptCacheKey)
+	}
 	result, err := a.callXAIResponse(ctx, xAIRequest{
+		ReasoningEffort:  fallbackString(in.ReasoningEffort, a.Config.Providers.Grok.ReasoningEffort),
+		PromptCacheKey:   cacheKey,
 		Prompt:           prompt,
 		Model:            fallbackString(in.Model, a.Config.Providers.Grok.Model),
 		UseWebSearch:     boolOrDefault(in.UseWebSearch, a.Config.Providers.Grok.UseWebSearch),
@@ -276,10 +284,14 @@ func (a *App) handleMarketauxSectorRotation(ctx context.Context, _ *mcp.CallTool
 }
 
 func renderAIResult(result AIResult) string {
-	if len(result.Citations) == 0 {
-		return result.Text
+	text := result.Text
+	if len(result.Citations) > 0 {
+		text += "\n\nSources:\n- " + strings.Join(result.Citations, "\n- ")
 	}
-	return result.Text + "\n\nSources:\n- " + strings.Join(result.Citations, "\n- ")
+	if u := result.Usage; u != nil {
+		text += fmt.Sprintf("\n\nToken usage: %d input (%d cached), %d output (%d reasoning), %d total.", u.InputTokens, u.InputTokensDetails.CachedTokens, u.OutputTokens, u.OutputTokensDetails.ReasoningTokens, u.TotalTokens)
+	}
+	return text
 }
 
 func toolResultWithText(text string) *mcp.CallToolResult {

@@ -10,7 +10,9 @@ providers:
     timeout_seconds: 300
 
   grok:
-    model: grok-4.5
+    model: grok-4.6
+    reasoning_effort: high
+    prompt_cache_key: news-routine-mcp
     timeout_seconds: 300
     use_web_search: true
     use_x_search: true
