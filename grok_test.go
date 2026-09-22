@@ -36,7 +36,7 @@ func TestGrokRequestAndUsage(t *testing.T) {
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 					t.Fatal(err)
 				}
-				if payload["model"] != "grok-4.6" {
+				if payload["model"] != "grok-4.7" {
 					t.Errorf("model: %v", payload["model"])
 				}
 				effort := payload["reasoning"].(map[string]any)["effort"]

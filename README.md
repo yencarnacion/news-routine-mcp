@@ -5,11 +5,11 @@
 ## What It Exposes
 
 - `summarize_trade_the_news`
-  Converts pasted TradeTheNews or newsletter text into structured summaries using OpenAI Responses API.
+  Converts TradeTheNews text or image attachments into summaries using OpenAI Responses API; supported GPT Audio models accept sound uploads through Chat Completions.
 - `run_grok_prompt`
   Runs a current-events prompt against Grok using xAI Responses API with `web_search` and `x_search` enabled by default.
 - `run_perplexity_query`
-  Runs a Perplexity Sonar query for filings, catalysts, and general research.
+  Runs a Perplexity Sonar query for filings, catalysts, and general research, with optional image attachments on supported models.
 - `marketaux_premarket_scan`
   Returns the Marketaux premarket aggregation scan.
 - `marketaux_watchlist_intraday`
@@ -119,7 +119,7 @@ If your Claude client prefers launching a local command over stdio, use:
 ## Notes on Provider Defaults
 
 - OpenAI defaults to `gpt-5.6-terra` with `high` reasoning effort.
-- Grok defaults to `grok-4.6` with a five-minute timeout. It uses xAI's Responses API with web and X search enabled.
+- Grok defaults to `grok-4.7` with a five-minute timeout. It uses xAI's Responses API with web and X search enabled.
 - Perplexity defaults to `sonar-pro`.
 - The Marketaux tools preserve the upstream-style defaults for premarket, watchlist, and sector scans.
 
@@ -133,6 +133,33 @@ TradeTheNews summary:
 }
 ```
 
+OpenAI image summary (`summarize_trade_the_news`):
+
+```json
+{
+  "image_urls": ["https://example.com/newsletter.png"],
+  "prompt_override": "Summarize the market-moving stories in this newsletter."
+}
+```
+
+The default `gpt-5.6-terra` supports images. For uploads, pass `data:image/png;base64,<base64 file bytes>` (or `image/jpeg`, `image/webp`, `image/gif`) in `image_urls`. GIFs must be non-animated. Multiple images and mixed public HTTP(S) URLs/base64 uploads are supported. This server limits each uploaded image to 20 MiB; OpenAI validates remote files and model-specific limits. Model overrides must support image input on Responses; provider errors are returned for unsupported models. The configured reasoning effort is omitted for GPT-4.1 and GPT-4o models, which do not support that option.
+
+OpenAI sound summary:
+
+```json
+{
+  "model": "gpt-audio-1.5",
+  "audio": [{"format": "wav", "data": "<base64 file bytes>"}],
+  "prompt_override": "Summarize the market-moving points in this recording."
+}
+```
+
+`audio` accepts WAV or MP3 bytes as base64, with a server limit of 25 MiB per clip. Use `gpt-audio-1.5`, `gpt-audio`, or `gpt-audio-mini`; supported snapshots are `gpt-audio-2025-08-28`, `gpt-audio-mini-2025-10-06`, and `gpt-audio-mini-2025-12-15`. These models route to Chat Completions and return text summaries, with reasoning settings omitted. The default Terra model cannot accept audio. Audio models cannot accept images, so mixed image/audio requests are rejected. Other audio models require a capability/routing update before use.
+
+`email` is optional when attachments are present and can supply extra context. The usual news prompt applies unless `prompt_override` is provided. Local paths and audio URLs are not accepted; the MCP client must encode file bytes. Media uploads are validated before any API request, and media requests disable provider response storage. Audio validation checks encoding and file signatures; OpenAI validates the complete recording.
+
+References: [Terra capabilities](https://developers.openai.com/api/docs/models/gpt-5.6-terra), [image inputs](https://developers.openai.com/api/docs/guides/images-vision), [audio inputs](https://developers.openai.com/api/docs/guides/audio-chat-completions).
+
 Grok current-events query:
 
 ```json
@@ -145,12 +172,29 @@ Grok current-events query:
 }
 ```
 
+Grok image query (`run_grok_prompt`):
+
+```json
+{
+  "prompt": "Describe this chart and explain the notable price moves.",
+  "image_urls": ["https://example.com/chart.png"],
+  "use_web_search": false,
+  "use_x_search": false
+}
+```
+
+For uploads, the MCP client should read the image and pass a data URL in `image_urls`, formatted as `data:image/png;base64,<base64 file bytes>` or `data:image/jpeg;base64,<base64 file bytes>`. Multiple images and mixed URLs/uploads are supported. Local filesystem paths are not accepted. A prompt is still required.
+
+Grok 4.7 accepts JPEG/PNG images up to 20 MiB each. Upload encoding, size, and media type are validated before contacting xAI; remote image contents and limits are validated by xAI. Image requests set `store: false`, as recommended by xAI. Model overrides must support image input when attachments are supplied. Audio uploads are not exposed because Grok 4.7 supports text and image input only; xAI's separate speech APIs are not part of this tool.
+
+References: [Grok 4.7 capabilities](https://docs.x.ai/developers/grok-4-7), [image input format and limits](https://docs.x.ai/developers/model-capabilities/images/understanding).
+
 Grok settings in `config.yaml`:
 
 ```yaml
 providers:
   grok:
-    model: grok-4.6
+    model: grok-4.7
     reasoning_effort: high
     prompt_cache_key: news-routine-mcp
 ```
@@ -172,6 +216,24 @@ Perplexity filing query:
   "query": "Summarize the latest 8-K filing for NVDA and tell me the main day-trader takeaway."
 }
 ```
+
+Perplexity image query (`run_perplexity_query`):
+
+```json
+{
+  "query": "Explain this chart and research the relevant company news.",
+  "image_urls": ["https://example.com/chart.png"],
+  "search_mode": "web"
+}
+```
+
+For uploads, the MCP client should pass `data:image/png;base64,<base64 file bytes>` in `image_urls`; JPEG (`image/jpeg`), WebP (`image/webp`), and GIF (`image/gif`) are also accepted. Multiple images and mixed HTTPS URLs/base64 uploads are supported. A `query` is required, and the default model remains `sonar-pro`. Search mode retains the configured default (`sec`) unless overridden, as above.
+
+Image attachments are enabled for `sonar`, `sonar-pro`, and `sonar-reasoning-pro`. Other model selections, including `sonar-deep-research`, are rejected for image requests; text queries retain their existing behavior. Uploaded images are limited to 50 MB (50,000,000 bytes) each and checked for base64 encoding and matching media signatures. Perplexity validates complete files and remote image contents. Remote images must use public HTTPS URLs; local paths are not accepted.
+
+The Sonar API does not document audio inputs, so this tool does not expose sound uploads. Audio data URLs are rejected. The Perplexity consumer app's file/voice features do not establish Sonar API support.
+
+References: [Sonar media inputs](https://docs.perplexity.ai/docs/sonar/media), [Sonar Reasoning Pro](https://docs.perplexity.ai/docs/sonar/models/sonar-reasoning-pro), [Sonar API reference](https://docs.perplexity.ai/api-reference/sonar-post).
 
 Marketaux watchlist:
 

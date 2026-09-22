@@ -32,13 +32,16 @@ type ServerReference struct {
 }
 
 type SummarizeTradeTheNewsInput struct {
-	Email           string `json:"email" jsonschema:"Raw TradeTheNews or newsletter text to summarize."`
-	PromptOverride  string `json:"prompt_override,omitempty" jsonschema:"Optional full prompt to use instead of settings.yaml news_prompt."`
-	Model           string `json:"model,omitempty" jsonschema:"Optional OpenAI model override."`
-	ReasoningEffort string `json:"reasoning_effort,omitempty" jsonschema:"Optional OpenAI reasoning effort override."`
+	Email           string             `json:"email,omitempty" jsonschema:"Raw TradeTheNews or newsletter text. Optional when images or audio are supplied."`
+	ImageURLs       []string           `json:"image_urls,omitempty" jsonschema:"Image URLs or base64 data URLs (PNG, JPEG, WebP, non-animated GIF); requires an image-capable model. Server upload limit: 20 MiB each."`
+	Audio           []OpenAIAudioInput `json:"audio,omitempty" jsonschema:"Base64 WAV/MP3 uploads. Select gpt-audio-1.5, gpt-audio, or gpt-audio-mini. Text summary returned; images cannot be combined with these audio models. Server upload limit: 25 MiB each."`
+	PromptOverride  string             `json:"prompt_override,omitempty" jsonschema:"Optional full prompt to use instead of settings.yaml news_prompt."`
+	Model           string             `json:"model,omitempty" jsonschema:"Optional OpenAI model override."`
+	ReasoningEffort string             `json:"reasoning_effort,omitempty" jsonschema:"Optional OpenAI reasoning effort override."`
 }
 
 type GrokPromptInput struct {
+	ImageURLs        []string `json:"image_urls,omitempty" jsonschema:"Optional JPEG/PNG images: public HTTP(S) URLs or data:image/jpeg;base64,... or data:image/png;base64,... uploads. Maximum 20 MiB per uploaded image. Audio is not supported by Grok 4.7."`
 	ReasoningEffort  string   `json:"reasoning_effort,omitempty" jsonschema:"Optional reasoning effort: low, medium, high, or xhigh. Defaults to configured effort (high)."`
 	PromptCacheKey   *string  `json:"prompt_cache_key,omitempty" jsonschema:"Optional stable cache routing key for related requests. Omit to use config; empty string omits the key. Does not store answers or conversation history."`
 	Prompt           string   `json:"prompt" jsonschema:"Prompt to send to Grok."`
@@ -54,9 +57,10 @@ type GrokPromptInput struct {
 }
 
 type PerplexityQueryInput struct {
-	Query      string `json:"query" jsonschema:"Prompt to send to Perplexity."`
-	Model      string `json:"model,omitempty" jsonschema:"Optional Perplexity model override."`
-	SearchMode string `json:"search_mode,omitempty" jsonschema:"Optional Perplexity search mode override."`
+	ImageURLs  []string `json:"image_urls,omitempty" jsonschema:"Optional PNG/JPEG/WebP/GIF images as public HTTPS URLs or base64 data URLs. Maximum 50 MB per upload. Supported models: sonar, sonar-pro, sonar-reasoning-pro. Sonar audio input is not supported."`
+	Query      string   `json:"query" jsonschema:"Prompt to send to Perplexity."`
+	Model      string   `json:"model,omitempty" jsonschema:"Optional Perplexity model override."`
+	SearchMode string   `json:"search_mode,omitempty" jsonschema:"Optional Perplexity search mode override."`
 }
 
 type MarketauxPremarketInput struct {
@@ -100,17 +104,17 @@ func newMCPServer(app *App) *mcp.Server {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "summarize_trade_the_news",
-		Description: "Summarize raw TradeTheNews or newsletter text with OpenAI using the settings.yaml news prompt.",
+		Description: "Summarize TradeTheNews text, images, or audio with OpenAI using the settings.yaml news prompt. Images require a vision model; WAV/MP3 audio requires a supported GPT Audio model.",
 	}, app.handleSummarizeTradeTheNews)
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "run_grok_prompt",
-		Description: "Run a current-events research prompt against Grok using xAI Responses API with web_search and x_search support.",
+		Description: "Run a current-events research prompt against Grok using xAI Responses API with web_search, x_search, and JPEG/PNG image attachments. Grok 4.7 does not accept audio.",
 	}, app.handleRunGrokPrompt)
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "run_perplexity_query",
-		Description: "Run a Perplexity Sonar query for filings, catalysts, or general research.",
+		Description: "Run a Perplexity Sonar query for filings, catalysts, or general research, with optional image attachments on supported models. Audio input is not supported.",
 	}, app.handleRunPerplexityQuery)
 
 	mcp.AddTool(server, &mcp.Tool{
@@ -153,8 +157,8 @@ func (a *App) handleListPromptPresets(_ context.Context, _ *mcp.CallToolRequest,
 
 func (a *App) handleSummarizeTradeTheNews(ctx context.Context, _ *mcp.CallToolRequest, in SummarizeTradeTheNewsInput) (*mcp.CallToolResult, AIResult, error) {
 	email := strings.TrimSpace(in.Email)
-	if email == "" {
-		return nil, AIResult{}, fmt.Errorf("email is required")
+	if email == "" && len(in.ImageURLs) == 0 && len(in.Audio) == 0 {
+		return nil, AIResult{}, fmt.Errorf("email, image_urls, or audio is required")
 	}
 
 	prompt := strings.TrimSpace(in.PromptOverride)
@@ -166,7 +170,7 @@ func (a *App) handleSummarizeTradeTheNews(ctx context.Context, _ *mcp.CallToolRe
 	reasoningEffort := fallbackString(in.ReasoningEffort, a.Config.Providers.OpenAI.ReasoningEffort)
 	fullPrompt := strings.TrimSpace(prompt) + "\n\n" + email
 
-	result, err := a.callOpenAIResponse(ctx, model, reasoningEffort, fullPrompt)
+	result, err := a.callOpenAIResponse(ctx, model, reasoningEffort, fullPrompt, in.ImageURLs, in.Audio)
 	if err != nil {
 		return nil, AIResult{}, err
 	}
@@ -188,6 +192,7 @@ func (a *App) handleRunGrokPrompt(ctx context.Context, _ *mcp.CallToolRequest, i
 		ReasoningEffort:  fallbackString(in.ReasoningEffort, a.Config.Providers.Grok.ReasoningEffort),
 		PromptCacheKey:   cacheKey,
 		Prompt:           prompt,
+		ImageURLs:        in.ImageURLs,
 		Model:            fallbackString(in.Model, a.Config.Providers.Grok.Model),
 		UseWebSearch:     boolOrDefault(in.UseWebSearch, a.Config.Providers.Grok.UseWebSearch),
 		UseXSearch:       boolOrDefault(in.UseXSearch, a.Config.Providers.Grok.UseXSearch),
@@ -216,6 +221,7 @@ func (a *App) handleRunPerplexityQuery(ctx context.Context, _ *mcp.CallToolReque
 		fallbackString(in.Model, a.Config.Providers.Perplexity.Model),
 		fallbackString(in.SearchMode, a.Config.Providers.Perplexity.SearchMode),
 		query,
+		in.ImageURLs,
 	)
 	if err != nil {
 		return nil, AIResult{}, err

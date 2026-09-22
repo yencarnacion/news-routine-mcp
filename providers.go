@@ -39,7 +39,11 @@ type MarketauxResult struct {
 	JSON       string            `json:"json"`
 }
 
-func (a *App) callOpenAIResponse(ctx context.Context, model, reasoningEffort, prompt string) (AIResult, error) {
+func (a *App) callOpenAIResponse(ctx context.Context, model, reasoningEffort, prompt string, images []string, audio []OpenAIAudioInput) (AIResult, error) {
+	endpoint, payload, err := buildOpenAIRequest(model, reasoningEffort, prompt, images, audio)
+	if err != nil {
+		return AIResult{}, err
+	}
 	apiKey := strings.TrimSpace(os.Getenv("OPENAI_API_KEY"))
 	if apiKey == "" {
 		return AIResult{}, fmt.Errorf("OPENAI_API_KEY not set")
@@ -48,16 +52,7 @@ func (a *App) callOpenAIResponse(ctx context.Context, model, reasoningEffort, pr
 	ctx, cancel := context.WithTimeout(ctx, a.Config.Providers.OpenAI.Timeout())
 	defer cancel()
 
-	payload := map[string]any{
-		"model":        model,
-		"instructions": "You are a concise news-summary assistant.",
-		"input":        prompt,
-	}
-	if strings.TrimSpace(reasoningEffort) != "" {
-		payload["reasoning"] = map[string]any{"effort": reasoningEffort}
-	}
-
-	body, err := a.postJSON(ctx, "https://api.openai.com/v1/responses", apiKey, payload, nil)
+	body, err := a.postJSON(ctx, endpoint, apiKey, payload, nil)
 	if err != nil {
 		return AIResult{}, err
 	}
@@ -75,6 +70,7 @@ func (a *App) callOpenAIResponse(ctx context.Context, model, reasoningEffort, pr
 }
 
 type xAIRequest struct {
+	ImageURLs        []string
 	ReasoningEffort  string
 	PromptCacheKey   string
 	Prompt           string
@@ -94,6 +90,10 @@ func (a *App) callXAIResponse(ctx context.Context, req xAIRequest) (AIResult, er
 	if err := validateGrokReasoningEffort(req.ReasoningEffort); err != nil {
 		return AIResult{}, err
 	}
+	content, err := grokUserContent(req.Prompt, req.ImageURLs)
+	if err != nil {
+		return AIResult{}, err
+	}
 	apiKey := strings.TrimSpace(os.Getenv("GROK_API_KEY"))
 	if apiKey == "" {
 		return AIResult{}, fmt.Errorf("GROK_API_KEY not set")
@@ -111,11 +111,14 @@ func (a *App) callXAIResponse(ctx context.Context, req xAIRequest) (AIResult, er
 			},
 			{
 				"role":    "user",
-				"content": req.Prompt,
+				"content": content,
 			},
 		},
 	}
 
+	if len(req.ImageURLs) > 0 {
+		payload["store"] = false
+	}
 	payload["reasoning"] = map[string]any{"effort": req.ReasoningEffort}
 	if key := strings.TrimSpace(req.PromptCacheKey); key != "" {
 		payload["prompt_cache_key"] = key
@@ -182,7 +185,11 @@ func buildXAITools(req xAIRequest) []map[string]any {
 	return tools
 }
 
-func (a *App) callPerplexityResponse(ctx context.Context, model, searchMode, query string) (AIResult, error) {
+func (a *App) callPerplexityResponse(ctx context.Context, model, searchMode, query string, images []string) (AIResult, error) {
+	content, err := perplexityUserContent(model, query, images)
+	if err != nil {
+		return AIResult{}, err
+	}
 	apiKey := strings.TrimSpace(os.Getenv("PPLX_API_KEY"))
 	if apiKey == "" {
 		return AIResult{}, fmt.Errorf("PPLX_API_KEY not set")
@@ -193,14 +200,14 @@ func (a *App) callPerplexityResponse(ctx context.Context, model, searchMode, que
 
 	payload := map[string]any{
 		"model": model,
-		"messages": []map[string]string{
+		"messages": []map[string]any{
 			{
 				"role":    "system",
 				"content": "You are a concise research assistant for traders.",
 			},
 			{
 				"role":    "user",
-				"content": query,
+				"content": content,
 			},
 		},
 	}

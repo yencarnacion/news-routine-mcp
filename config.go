@@ -157,7 +157,7 @@ func loadConfig(path string) (AppConfig, error) {
 	cfg.Providers.OpenAI.ReasoningEffort = fallbackString(cfg.Providers.OpenAI.ReasoningEffort, "high")
 	cfg.Providers.OpenAI.TimeoutSeconds = fallbackInt(cfg.Providers.OpenAI.TimeoutSeconds, 300)
 
-	cfg.Providers.Grok.Model = fallbackString(cfg.Providers.Grok.Model, "grok-4.6")
+	cfg.Providers.Grok.Model = fallbackString(cfg.Providers.Grok.Model, "grok-4.7")
 	cfg.Providers.Grok.ReasoningEffort = fallbackString(cfg.Providers.Grok.ReasoningEffort, "high")
 	if err := validateGrokReasoningEffort(cfg.Providers.Grok.ReasoningEffort); err != nil {
 		return AppConfig{}, err
@@ -204,7 +204,7 @@ func defaultConfig() AppConfig {
 			Grok: GrokConfig{
 				ReasoningEffort: "high",
 				PromptCacheKey:  "news-routine-mcp",
-				Model:           "grok-4.6",
+				Model:           "grok-4.7",
 				TimeoutSeconds:  300,
 				UseWebSearch:    true,
 				UseXSearch:      true,
